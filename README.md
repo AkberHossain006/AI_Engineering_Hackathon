@@ -54,3 +54,25 @@ vectorizer = TfidfVectorizer()
 tfidf_matrix = vectorizer.fit_transform(df['combined_text'])
 tfidf_df = pd.DataFrame(tfidf_matrix.toarray(), columns=vectorizer.get_feature_names_out())
 tfidf_df.to_csv("/content/sample_data/tfidf_output.csv", index=False)
+!pip install faiss-cpu --no-cache-dir           
+import faiss
+import numpy as np
+# Step 1: Convert DataFrame to numpy array
+vectors = tfidf_df.to_numpy().astype('float32')  # FAISS requires float32
+
+# Step 2: Create FAISS index (flat L2 index)
+dimension = vectors.shape[1]
+index = faiss.IndexFlatL2(dimension)
+
+# Step 3: Add vectors to the index
+index.add(vectors)
+
+# Optional: Save the index to a file
+faiss.write_index(index, "tfidf_faiss.index")
+
+print("TF-IDF vectors stored in FAISS index!")
+index = faiss.read_index("tfidf_faiss.index")
+
+# Query: Find top 5 nearest neighbors of the first item
+D, I = index.search(vectors[0:1], k=5)  # D = distances, I = indices
+print("Top 5 similar items (by index):", I)
