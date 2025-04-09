@@ -76,3 +76,35 @@ index = faiss.read_index("tfidf_faiss.index")
 # Query: Find top 5 nearest neighbors of the first item
 D, I = index.search(vectors[0:1], k=5)  # D = distances, I = indices
 print("Top 5 similar items (by index):", I)
+from sentence_transformers import SentenceTransformer
+import faiss
+import numpy as np
+
+# Sample documents and query
+documents = ["What is AI?", "History of AI", "Deep learning models", "How to cook pasta"]
+query_texts = ["Tell me about artificial intelligence"]
+
+# 1. Create embeddings
+model = SentenceTransformer('all-MiniLM-L6-v2')
+doc_embeddings = model.encode(documents, convert_to_numpy=True)
+query_vectors = model.encode(query_texts, convert_to_numpy=True)
+
+# 2. Create FAISS index
+dimension = doc_embeddings.shape[1]
+index = faiss.IndexFlatL2(dimension)
+index.add(doc_embeddings)
+
+# 3. Ground truth (for illustration; in real use, this would be hand-labeled)
+# Suppose the first document is relevant
+true_labels = [1, 0, 0, 0]
+
+# 4. Search
+k = 3
+D, I = index.search(query_vectors, k)
+
+# 5. Create relevance labels for the retrieved docs
+retrieved_indices = I[0]
+retrieved_labels = np.array([true_labels[idx] for idx in retrieved_indices])
+
+print("Top K Retrieved Indices:", retrieved_indices)
+print("Relevance Labels:", retrieved_labels)
